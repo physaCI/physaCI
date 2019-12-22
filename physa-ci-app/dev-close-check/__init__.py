@@ -10,7 +10,7 @@ import azure.functions as func
 # pylint: disable=import-error
 from __app__.lib import app_client
 
-class dev_githubClient(app_client.appClient):
+class DevGithubClient(app_client.appClient):
     """ Client object to wrap and contain necessary functions and variables
         to interact with the App.
     """
@@ -72,7 +72,7 @@ def main(msg: func.QueueMessage) -> None:
 
     check_info = json.loads(message)
     
-    event_client = dev_githubClient()
+    event_client = DevGithubClient()
     event_client.payload = check_info
 
     event_client.close_check_run()

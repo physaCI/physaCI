@@ -15,7 +15,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     event_status = 200
 
     if 'x-github-event' in req.headers:
-        event_client = check_handler.githubClient()
+        event_client = check_handler.GithubClient()
         event = req.headers['x-github-event']
         payload = ""
         action = None

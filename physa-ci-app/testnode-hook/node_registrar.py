@@ -16,7 +16,7 @@ _QUEUE_CONFIG = {
     'message_decode_policy': queue.TextBase64DecodePolicy(),
 }
 
-class nodeItem:
+class NodeItem:
     """ Wrapper to contain instances of a node.
     """
     def __init__(self, **kwargs):
@@ -30,7 +30,7 @@ class nodeItem:
         self.listen_port = kwargs.get('listen_port', 4812)
         self.busy = kwargs.get('busy', False)
 
-def currentRegistrar():
+def current_registrar():
     """ Retrieve the nodes currently in the registrar.
         
         
@@ -52,7 +52,7 @@ def currentRegistrar():
             node_items.append(
                 {
                     'message': message,
-                    'node': nodeItem(**kwargs),
+                    'node': NodeItem(**kwargs),
                 }
             )
         except:
@@ -64,7 +64,7 @@ def currentRegistrar():
     return node_items
 
 
-def addNode(node):
+def add_node(node):
     """ Adds a node to the registrar queue. Each node entry in the 
         registrar will expire an hour after it is added. If supplied
         node is already in the registrar queue and set to expire within
@@ -78,7 +78,7 @@ def addNode(node):
         logging.info(f'addnode failed. node_ip missing.')
         result = False
     else:
-        current_entries = currentRegistrar()
+        current_entries = current_registrar()
         for entry in current_entries:
             entry_node_ip = entry['node'].node_ip
             entry_node_name = entry['node'].node_name
@@ -115,7 +115,7 @@ def addNode(node):
 
     return result
 
-def updateNode(message, node):
+def update_node(message, node):
     """ Update a node that is currently in the registrar.
 
     :param: str message: The id of the message in the registrar queue
@@ -172,7 +172,7 @@ def remove_node(message):
 
     return result
 
-def pushToNodes(message, stop_on_first_success=False):
+def push_to_todes(message, stop_on_first_success=False):
     """ Push a message to all active, non-busy nodes in the node registrar.
         (Reminder: entries in the registrar queue expire after 1 hour.)
     
@@ -200,7 +200,7 @@ def pushToNodes(message, stop_on_first_success=False):
         )
         return False
 
-    active_nodes = currentRegistrar()
+    active_nodes = current_registrar()
     final_status = 200
     push_response = {}
     for item in active_nodes:
@@ -225,7 +225,7 @@ def pushToNodes(message, stop_on_first_success=False):
             if stop_on_first_success:
                 try:
                     node.busy = body['node_busy']
-                    result = updateNode(item['message'], node)
+                    result = update_node(item['message'], node)
                     if result: # update success; stop pushing messages
                        break 
                 except Exception as err:

@@ -8,7 +8,7 @@ from azure.storage.queue import QueueClient
 # pylint: disable=import-error
 from __app__.lib import app_client
 
-class testnodeClient(app_client.appClient):
+class TestNodeClient(app_client.appClient):
     """ Client object to wrap and contain necessary functions and variables
         to interact with the App.
     """

@@ -27,8 +27,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             if ip_extract:
                 logging.info(f'ip_extract: {ip_extract.group(1)}')
                 node_params['node_ip'] = ip_extract.group(1)
-            new_node = node_registrar.nodeItem(**node_params)
-            result = node_registrar.addNode(new_node)
+            new_node = node_registrar.NodeItem(**node_params)
+            result = node_registrar.add_node(new_node)
             if not result:
                 event_status = 500
     elif req_func == 'checkresult':
@@ -39,11 +39,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         else:
             send_to_table = None
             if req_action == 'add':
-                send_to_table = node_db.addResult(
+                send_to_table = node_db.add_result(
                     check_result.resultsToTableEntity()
                 )
             elif req_action == 'update':
-                send_to_table = node_db.updateResult(
+                send_to_table = node_db.update_result(
                     check_result.resultsToTableEntity()
                 )
             

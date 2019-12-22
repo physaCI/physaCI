@@ -5,7 +5,7 @@ from azure.cosmosdb.table.tableservice import TableService
 from azure.cosmosdb.table.models import Entity
 
 
-def addResult(results_entity):
+def add_result(results_entity):
     """ Adds a new result to the ``rosiepi`` storage table.
 
     :param: results_entity: A ``azure.cosmodb.table.models.Entity`` object
@@ -33,7 +33,7 @@ def addResult(results_entity):
 
     return response
 
-def updateResult(results_entity):
+def update_result(results_entity):
     """ Updates a result in the ``rosiepi`` storage table.
 
     :param: results_entity: A ``azure.cosmodb.table.models.Entity`` object

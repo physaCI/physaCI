@@ -7,9 +7,9 @@ class Result():
     """
 
     def __init__(self, results):
-        self.results = verifyResults(results)
+        self.results = verify_results(results)
 
-    def resultsToTableEntity(self):
+    def results_to_table_entity(self):
         """ Format the results into an Azure Storage Table entity.
 
         :return: azure.cosmodb.table.models.Entity
@@ -23,7 +23,7 @@ class Result():
 
             return entity
 
-    def resultsToGitHub(self, key_prefix='check_run'):
+    def results_to_github(self, key_prefix='check_run'):
         """ Format the results into a GitHub Check JSON message.
 
         :return: JSON string
@@ -49,7 +49,7 @@ class Result():
             return check_msg
 
 
-def verifyResults(results):
+def verify_results(results):
     """ Verify supplied results to ensure proper format.
 
     :param: str,dict results: A JSON string or dict of the results.

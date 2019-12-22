@@ -26,7 +26,7 @@ def generate_jwt_token():
 
         return jwt_auth
 
-class appClient():
+class AppClient():
     """ Client object to wrap and contain necessary functions and variables
         to interact with the App.
     """
