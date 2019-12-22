@@ -21,7 +21,7 @@ class nodeItem:
     """
     def __init__(self, **kwargs):
         try:
-            self.node_ip = kwargs['node_id']
+            self.node_ip = kwargs['node_ip']
         except KeyError:
             logging.info(f'nodeItem creation failed. node_ip missing.')
             raise
@@ -74,7 +74,7 @@ def addNode(node):
 
         queue_msg = {
             'node_name': node.node_name,
-            'node_ip': node.node_id,
+            'node_ip': node.node_ip,
             'listen_port': node.listen_port,
             'busy': node.busy,
         }
