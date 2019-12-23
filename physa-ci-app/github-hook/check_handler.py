@@ -9,7 +9,7 @@ from azure.storage import queue
 # pylint: disable=import-error
 from __app__.lib import app_client
 
-class GithubClient(app_client.appClient):
+class GithubClient(app_client.AppClient):
     """ Client object to wrap and contain necessary functions and variables
         to interact with the App.
     """
