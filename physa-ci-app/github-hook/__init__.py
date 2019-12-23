@@ -42,7 +42,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         
         elif event == 'check_run':
             logging.info('Processing check_run...')
-            if str(payload['check_run']['app']['id']) == os.environ['APP_ID']:
+            if str(payload['check_run']['app']['id']) == os.environ['GITHUB_APP_ID']:
                 if action == 'created':
                     # initiate check_run
                     event_status = event_client.initiate_check_run()
@@ -51,7 +51,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     event_status = event_client.create_check_run()
             else:
                 check_id = str(payload['check_run']['app']['id'])
-                os_id = os.environ['APP_ID']
+                os_id = os.environ['GITHUB_APP_ID']
                 logging.info(f'Failed to match app IDs. env var: {os_id}; payload: {check_id}')
 
     logging.info(f'Event status: {event_status}')
