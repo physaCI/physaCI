@@ -11,7 +11,7 @@ def add_result(results_entity):
     :param: results_entity: A ``azure.cosmodb.table.models.Entity`` object
                             containing the results to add to the storage
                             table. ``Entity`` object can be retrieved from
-                            ``lib/result.py::Result.resultsToTableEntity()``.
+                            ``lib/result.py::Result.results_to_table_entity()``.
 
     :return: The entity's Etag if successful. None if failed.
     """
@@ -39,7 +39,7 @@ def update_result(results_entity):
     :param: results_entity: A ``azure.cosmodb.table.models.Entity`` object
                             containing the results to add to the storage
                             table. ``Entity`` object can be retrieved from
-                            ``lib/result.py::Result.resultsToTableEntity()``.
+                            ``lib/result.py::Result.results_to_table_entity()``.
 
     :return: The entity's Etag if successful. None if failed.
     """

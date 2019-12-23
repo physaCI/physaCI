@@ -10,7 +10,7 @@ import azure.functions as func
 # pylint: disable=import-error
 from __app__.lib import app_client
 
-class DevGithubClient(app_client.appClient):
+class DevGithubClient(app_client.AppClient):
     """ Client object to wrap and contain necessary functions and variables
         to interact with the App.
     """

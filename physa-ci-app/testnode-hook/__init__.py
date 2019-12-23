@@ -40,11 +40,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             send_to_table = None
             if req_action == 'add':
                 send_to_table = node_db.add_result(
-                    check_result.resultsToTableEntity()
+                    check_result.results_to_table_entity()
                 )
             elif req_action == 'update':
                 send_to_table = node_db.update_result(
-                    check_result.resultsToTableEntity()
+                    check_result.results_to_table_entity()
                 )
             
             if not send_to_table:
