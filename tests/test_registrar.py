@@ -2,6 +2,7 @@
 import json
 import os
 import requests
+import time
 import unittest
 
 
@@ -29,6 +30,8 @@ class TestRegistrar(unittest.TestCase):
             Relies on test_add_node success...
         """
 
+        # wait 1 second to ensure queue visibility
+        time.sleep(1)
         response = node_request()
         self.assertTrue(response.ok)
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import logging
 import os
@@ -43,7 +43,12 @@ def current_registrar():
         'rosiepi-node-registrar',
         **_QUEUE_CONFIG
     )
-    results = queue_client.peek_messages(max_messages=_AZURE_QUEUE_PEEK_MAX)
+    msg_kwargs = {
+        'messages_per_page': _AZURE_QUEUE_PEEK_MAX,
+        'visibility_timeout': 1
+    }
+    #results = queue_client.peek_messages(max_messages=_AZURE_QUEUE_PEEK_MAX)
+    results = queue_client.receive_messages(**msg_kwargs)
 
     node_items = []
     for message in results:
@@ -82,36 +87,43 @@ def add_node(node):
         for entry in current_entries:
             entry_node_ip = entry['node'].node_ip
             entry_node_name = entry['node'].node_name
+
             if (node.node_ip == entry_node_ip and
                 node.node_name == entry_node_name):
                     logging.info(f'Node exists in queue: {entry}')
-                    entry_expires = datetime.utcfromtimestamp(
-                                        entry['messsage_expires']
-                                    )
-                    entry_expires_plus_5 = entry_expires + timedelta(minutes=5)
-                    if entry_expires_plus_5 > datetime.utcnow():
+                    entry_expires = entry['message'].expires_on
+                    expire_window = datetime.now(timezone.utc) + timedelta(minutes=5)
+                    if entry_expires < expire_window:
                         remove_node(entry['message'])
+                    else:
+                        logging.info(
+                            'add_node request made for existing node that '
+                            'is not expiring within 5 minutes. Aborting...'
+                            f'node info: {entry["node"]}'
+                        )
+                        result = False
 
-        queue_msg = {
-            'node_name': node.node_name,
-            'node_ip': node.node_ip,
-            'listen_port': node.listen_port,
-            'busy': node.busy,
-        }
+        if result:
+            queue_msg = {
+                'node_name': node.node_name,
+                'node_ip': node.node_ip,
+                'listen_port': node.listen_port,
+                'busy': node.busy,
+            }
 
-        queue_client = queue.QueueClient.from_connection_string(
-            _QUEUE_URL,
-            'rosiepi-node-registrar',
-            **_QUEUE_CONFIG
-        )
-        expiration = 3600 # 1 hour
-        try:
-            sent_msg = queue_client.send_message(json.dumps(queue_msg),
-                                                **{'time_to_live': expiration})
-            logging.info(f'Sent the following queue content: {sent_msg.content}')
-        except Exception as err:
-            logging.info(f'Error sending addnode queue message: {err}')
-            result = False
+            queue_client = queue.QueueClient.from_connection_string(
+                _QUEUE_URL,
+                'rosiepi-node-registrar',
+                **_QUEUE_CONFIG
+            )
+            expiration = 3600 # 1 hour
+            try:
+                sent_msg = queue_client.send_message(json.dumps(queue_msg),
+                                                    **{'time_to_live': expiration})
+                logging.info(f'Sent the following queue content: {sent_msg.content}')
+            except Exception as err:
+                logging.info(f'Error sending addnode queue message: {err}')
+                result = False
 
     return result
 
@@ -119,7 +131,7 @@ def update_node(message, node):
     """ Update a node that is currently in the registrar.
 
     :param: str message: The id of the message in the registrar queue
-    :param: nodeItem: The ``nodeItem`` with the information to update
+    :param: nodeItem: The ``NodeItem`` with the information to update
 
     :return: bool: Result of the update
     """
@@ -162,8 +174,7 @@ def remove_node(message):
         **_QUEUE_CONFIG
     )
     try:
-        msg_to_delete = queue_client.receive_messages(**message)
-        delete_msg = queue_client.delete_message(msg_to_delete)
+        delete_msg = queue_client.delete_message(message)
         logging.info('Sent the following message to delete: '
                      f'{delete_msg}')
     except Exception as err:
