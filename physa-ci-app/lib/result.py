@@ -16,8 +16,7 @@ class Result():
         """
         if self.results:
             entity = Entity()
-            pkey = [self.results.pop('node_name'), self.results.pop('node_id')]
-            entity.PartitionKey = "".join(pkey)
+            entity.PartitionKey = self.results.pop('node_name')
             entity.RowKey = self.results['check_run_id']
             entity.update(self.results)
 
