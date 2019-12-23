@@ -60,7 +60,7 @@ class AppClient():
                     'https://api.github.com/app/installations/'
                     f'{inst_id}/access_tokens'
                 )
-                bearer_string = " ".join(['Bearer', self.bearer_token])
+                bearer_string = f'Bearer  {self.bearer_token}'
                 header = {
                     'Authorization': bearer_string,
                     'Accept': 'application/vnd.github.machine-man-preview+json'
@@ -83,7 +83,7 @@ class AppClient():
         logging.info('Authenticating app...')
         if self.bearer_token:
             url = 'https://api.github.com/app'
-            bearer_string = " ".join(['Bearer', self.bearer_token])
+            bearer_string = f'Bearer {self.bearer_token}'
             header = {
                 'Authorization': bearer_string,
                 'Accept': 'application/vnd.github.machine-man-preview+json'
