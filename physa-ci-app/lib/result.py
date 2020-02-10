@@ -76,7 +76,6 @@ def verify_results(results):
             )
 
     required_keys = {
-        'node_id',
         'node_name',
         'node_results',
         'node_results_raw',
