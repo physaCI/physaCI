@@ -25,6 +25,11 @@ class NodeItem:
         except KeyError:
             logging.info(f'nodeItem creation failed. node_ip missing.')
             raise
+        try:
+            self.node_sig_key = kwargs['node_sig_key']
+        except KeyError:
+            logging.info(f'nodeItem creation failed. node_sig_key missing.')
+            raise
 
         self.node_name = kwargs.get('node_name', 'Unnamed')
         self.listen_port = kwargs.get('listen_port', 4812)
@@ -88,8 +93,8 @@ def add_node(node):
             entry_node_ip = entry['node'].node_ip
             entry_node_name = entry['node'].node_name
 
-            if (node.node_ip == entry_node_ip and
-                node.node_name == entry_node_name):
+            if node.node_name == entry_node_name:
+                if node.node_ip == entry_node_ip:
                     logging.info(f'Node exists in queue: {entry}')
                     entry_expires = entry['message'].expires_on
                     expire_window = datetime.now(timezone.utc) + timedelta(minutes=5)
@@ -98,15 +103,25 @@ def add_node(node):
                     else:
                         logging.info(
                             'add_node request made for existing node that '
-                            'is not expiring within 5 minutes. Aborting...'
+                            'is not expiring within 5 minutes. Aborting...\n'
                             f'node info: {entry["node"]}'
                         )
                         result = False
+                        break
+                else:
+                    logging.info(
+                        'add_node request made for existing node with '
+                        'a different IP address. Disregarding...\n'
+                        f'node info: {entry["node"]}'
+                    )
+                    result = False
+                    break
 
         if result:
             queue_msg = {
                 'node_name': node.node_name,
                 'node_ip': node.node_ip,
+                'node_sig_key': node.node_sig_key,
                 'listen_port': node.listen_port,
                 'busy': node.busy,
             }
@@ -139,6 +154,7 @@ def update_node(message, node):
     queue_msg = {
         'node_name': node.node_name,
         'node_ip': node.node_id,
+        'node_sig_key': node.node_sig_key,
         'listen_port': node.listen_port,
         'busy': node.busy,
     }
