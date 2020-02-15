@@ -199,7 +199,7 @@ def remove_node(message):
 
     return result
 
-def push_to_todes(message, stop_on_first_success=False):
+def push_to_nodes(message, stop_on_first_success=False):
     """ Push a message to all active, non-busy nodes in the node registrar.
         (Reminder: entries in the registrar queue expire after 1 hour.)
     
