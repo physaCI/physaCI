@@ -13,42 +13,46 @@ from __app__.lib import result
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
-    event_status = 200
+    response_kwargs = {
+        'status_code': 200,
+        'body': 'OK',
+        'headers': {},
+    }
 
     req_func = req.route_params.get('func')
     req_action = req.route_params.get('action')
 
     if req_func == 'registrar':
         node_params = req.get_json()
-        logging.info(f'node_params: {node_params}\n type: {type(node_params)}')
+        logging.info(f'node_params: {node_params}')
         
         ip = req.headers.get('x-forwarded-for', "null")
         ip_extract = re.match(r'((?:[\d]{1,3}\.){3}[\d]{1,3})', ip)
         if ip_extract:
             logging.info(f'ip_extract: {ip_extract.group(1)}')
             node_params['node_ip'] = ip_extract.group(1)
-        req_node = node_registrar.NodeItem(**node_params)
-        
-        result = None
-        
+
         if req_action == 'add':
-            result = node_registrar.add_node(req_node)
+                response_kwargs = node_registrar.add_node(node_params, response_kwargs)
         elif req_action == 'update':
+            req_node = node_registrar.NodeItem(**node_params)
             nodes = node_registrar.current_registrar()
             for node in nodes:
                 if (node['node_name'] == req_node.node_name and
                     node['node_ip'] == req_node.node_ip):
-                        result = node_registrar.update_node(node['message'], req_node)
+                        response_kwargs = node_registrar.update_node(
+                            node['message'], req_node, response_kwargs
+                        )
                         break
-        
-        if not result:
-            event_status = 500
-    
-    elif req_func == 'checkresult':
+
+    elif req_func == 'testresult':
         result_json = req.get_json()
         check_result = result.Result(result_json)
         if not check_result:
-            event_status = 500
+            response_kwargs['status_code'] = 400
+            response_kwargs['body'] = (
+                'Bad Request. Request missing JSON payload.'
+            )
         else:
             send_to_table = None
             if req_action == 'add':
@@ -61,7 +65,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 )
             
             if not send_to_table:
-                event_status = 500
+                response_kwargs['status_code'] = 500
+                response_kwargs['body'] = (
+                    'Interal error. Failed to update test results in physaCI.'
+                )
 
 
-    return func.HttpResponse(status_code=event_status)
+    return func.HttpResponse(**response_kwargs)
