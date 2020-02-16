@@ -1,11 +1,14 @@
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+import hmac
 import json
 import logging
 import os
 import requests
 
-import jwt
+from base64 import b64encode
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from hashlib import sha256
+from socket import gethostname
 
 from azure.storage import queue
 
@@ -248,24 +251,58 @@ def remove_node(message):
 
     return result
 
-def push_to_nodes(message, stop_on_first_success=False):
-    """ Push a message to all active, non-busy nodes in the node registrar.
+def push_test_to_nodes(message):
+    """ Push a test request to all nodes in the node registrar.
         (Reminder: entries in the registrar queue expire after 1 hour.)
     
     :param: str message: The JSON message to send
-    :param: bool stop_on_first_success: Default `False`. Setting to `True`
-                                        will cause the push to stop sending
-                                        additional push-notifications upon
-                                        the first successful response from
-                                        a node in the registrar. The queue
-                                        message in the registrar will also
-                                        be updated to reflect its returned
-                                        ``node_busy`` state.
 
-    :return: tuple: A tuple with the overal final_status, and a dict
-                    containing any successful responses from nodes.
+    :return: bool job_accepted: 
     """
 
+    def _send_run_test_request(node, message):
+        """ Private function to handle sending HTTP requests to nodes,
+            and updating the registrar.
+        """
+        response = None
+        
+        header = {'media': 'application/json'}
+        
+        try:
+            response = requests.post(
+                f'http://{node.node_ip}:{node.listen_port}/run-test',
+                auth=SigAuth(node),
+                headers=header,
+                json=message,
+            )
+        except requests.ConnectionError:
+            logging.warning(
+                'push_to_nodes connection error:\n'
+                f'\tNode name: {node.node_name}\n'
+                f'\tNode IP: {node.node_ip}'
+            )
+        
+        if response:
+            body = response.json()
+            body['status_code'] = response.status_code
+            push_response[node.node_ip] = body
+            if response.ok:
+                node.busy = body['node_busy']
+                result = update_node(
+                    item['message'], node, {'status_code': 200, 'body': 'OK'}
+                )
+                if not result['status_code'] < 400:
+                    logging.info(
+                        'update_node failed during push_test_to_nodes.\n'
+                        f'Response info: {body}\n'
+                        f'Node info:\n'
+                        f'\tName: {node.node_name}'
+                        f'\tIP: {node.node_ip}'
+                    )
+
+        return response
+
+    
     try:
         json.loads(message)
     except Exception as err:
@@ -277,44 +314,99 @@ def push_to_nodes(message, stop_on_first_success=False):
         return False
 
     active_nodes = current_registrar()
-    final_status = 200
+
     push_response = {}
+    busy_nodes = []
+    job_accepted = False
+
     for item in active_nodes:
         node = item['node']
+        # prefer non-busy nodes, but stash busy nodes to fallback on
         if node.busy:
+            busy_nodes.append(item)
             continue
         
-        header = {
-            'media': 'application/json'
-        }
-        response = requests.post(
-            f'http://{node.node_ip}:{node.listen_port}/', #update after flask is setup on the RPi
-            headers=header,
-            json=message,
-        )
+        response = _send_run_test_request(node, message)
+        if not response:
+            continue
+        else:
+            if response.ok:
+                job_accepted = True
+                break
         
-        final_status = response.status_code
-        body = response.json()
-        body['status_code'] = response.status_code
-        push_response[node.node_ip] = body
-        if response.ok:
-            if stop_on_first_success:
-                 node.busy = body['node_busy']
-                 result = update_node(
-                     item['message'], node, {'status_code': 200, 'body': 'OK'}
+    # fallback to adding a test request to a busy node's queue
+    # starting with the node with the fewest queued jobs
+    if not job_accepted:
+        for item in busy_nodes:
+            node = item['node']
+                        
+            try:
+                response = requests.get(
+                    f'http://{node.node_ip}:{node.listen_port}/status',
+                    auth=SigAuth(node)
                 )
-                 if result['status_code'] < 400: # update success; stop pushing messages
-                    break 
+            except requests.ConnectionError:
+                continue
 
-                 else:
-                    logging.info(
-                        'updateNode failed during pushToNodes.\n'
-                        f'Response info: {body}\n'
-                        f'Node info: {node}\n'
-                        f'Error info: {err}'
-                    )
+            if response.ok:
+                status = response.json()
+                item['node_job_count'] = status.get('job_count', 999)
 
-    return final_status, push_response
-            
+        busy_nodes.sort(key=lambda count: count.get('node_job_count', 999))
+        for item in busy_nodes:
+            response = _send_run_test_request(node, message)
+            if not response:
+                continue
+            else:
+                if response.ok:
+                    job_accepted = True
+                    break
+
+    return job_accepted
+
+class SigAuth(requests.auth.AuthBase):
+    def __init__(self, node):
+        self.node = node
+
+    def __call__(self, r):
+        signature, included_headers = self._build_sig(r.method, r.url_path)
+        r.headers['Authorization'] = signature
+        r.headers.update(included_headers)
+
+        return r
+
+    def _build_sig(self, http_method, http_path):
+        """ Build the HTTP headers with a signature for authentication with
+            a node's server.
+
+        :param: str http_method: The HTTP request method (e.g. GET, POST)
+        :param: str http_path: The target path of the HTTP request
+                            (e.g. '/status')
+
+        :return: str signature: 
+        """
+        request_target = f'{http_method.lower()} {http_path}'
+        header = {
+            'Host': gethostname(),
+            'Date': datetime.now(timezone.utc).strftime('%a, %d %b %Y %H:%M:%S GMT'),
+        }
+
+        sig_header_keys = ' '.join([hdr.lower() for hdr in header.keys()])
+        sig_string = (f'(request-target) {request_target}\nhost: {header["Host"]}\n'
+                    f'date: {header["Date"]}')
+        sig_hashed = hmac.new(
+            self.node.node_sig_key,
+            msg=sig_string.encode(),
+            digestmod=sha256
+        )
+
+        signature = ''.join([
+            'Signature '
+            f'keyID="{gethostname()}",',
+            'algorithm="hmac-sha256",',
+            f'headers="(request-target) {sig_header_keys}",',
+            f'signature="{b64encode(sig_hashed.digest())}"'
+        ])
 
 
+        return signature, header
