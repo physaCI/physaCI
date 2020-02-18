@@ -12,12 +12,13 @@ class Result():
     def results_to_table_entity(self):
         """ Format the results into an Azure Storage Table entity.
 
-        :return: azure.cosmodb.table.models.Entity
+        :return: azure.cosmodb.table.models.Entity or None
         """
         if self.results:
             entity = Entity()
             entity.PartitionKey = self.results.pop('node_name')
-            entity.RowKey = self.results['check_run_id']
+            padded_id = "{:0=50}".format(self.results['check_run_id'])
+            entity.RowKey = padded_id
             entity.update(self.results)
 
             return entity
