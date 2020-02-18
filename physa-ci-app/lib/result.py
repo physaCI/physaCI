@@ -2,6 +2,21 @@ import json
 import logging
 from azure.cosmosdb.table.models import Entity
 
+REQUIRED_KEYS = {
+    'node_name',
+    'check_run_suite_id',
+    'check_run_id',
+    'check_run_head_sha',
+    'check_run_url',
+    'check_run_pull_request',
+    'check_run_status',
+    #'node_results',
+    #'node_results_raw',
+    #'check_run_conclusion',
+    #'check_run_started_at',
+    #'check_run_output',
+}
+
 class Result():
     """ Class containing a test result, supplied by a node.
     """
@@ -76,23 +91,8 @@ def verify_results(results):
                 f'({type(results)}). Supplied results: {results}'
             )
 
-    required_keys = {
-        'node_name',
-        'node_results',
-        'node_results_raw',
-        'check_run_suite_id',
-        'check_run_id',
-        'check_run_head_sha',
-        'check_run_url',
-        'check_run_pull_request',
-        'check_run_status',
-        'check_run_conclusion',
-        'check_run_started_at',
-        'check_run_output',
-    }
-
     if verified:
-        diff = required_keys.difference(verified.keys())
+        diff = REQUIRED_KEYS.difference(verified.keys())
         if diff:
             logging.info(f'Failed to verify results. Missing data: {diff}')
             verified = None
