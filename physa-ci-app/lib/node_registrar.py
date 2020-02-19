@@ -318,6 +318,7 @@ def push_test_to_nodes(message):
     push_response = {}
     busy_nodes = []
     job_accepted = False
+    accepted_by = None
 
     for item in active_nodes:
         node = item['node']
@@ -332,6 +333,7 @@ def push_test_to_nodes(message):
         else:
             if response.ok:
                 job_accepted = True
+                accepted_by = node.node_name
                 break
         
     # fallback to adding a test request to a busy node's queue
@@ -354,15 +356,17 @@ def push_test_to_nodes(message):
 
         busy_nodes.sort(key=lambda count: count.get('node_job_count', 999))
         for item in busy_nodes:
+            node = item['node']
             response = _send_run_test_request(node, message)
             if not response:
                 continue
             else:
                 if response.ok:
                     job_accepted = True
+                    accepted_by = node.node_name
                     break
 
-    return job_accepted
+    return job_accepted, accepted_by
 
 class SigAuth(requests.auth.AuthBase):
     def __init__(self, node):
