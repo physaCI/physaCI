@@ -46,7 +46,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     elif req_func == 'testresult':
         result_json = req.get_json()
         check_result = result.Result(result_json)
-        if not check_result:
+        if not check_result.results:
             response_kwargs['status_code'] = 400
             response_kwargs['body'] = (
                 'Bad Request. Request missing JSON payload.'
