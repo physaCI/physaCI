@@ -8,13 +8,14 @@ REQUIRED_KEYS = {
     'check_run_id',
     'check_run_head_sha',
     'check_run_url',
-    'check_run_pull_request',
+    'check_run_pull_requests',
     'check_run_status',
     #'node_results',
     #'node_results_raw',
     #'check_run_conclusion',
     #'check_run_started_at',
     #'check_run_output',
+    #'check_run_details_url',
 }
 
 class Result():
@@ -32,7 +33,7 @@ class Result():
         if self.results:
             entity = Entity()
             entity.PartitionKey = self.results.pop('node_name')
-            padded_id = "{:0=50}".format(self.results['check_run_id'])
+            padded_id = "{:0=50}".format(self.results.pop('check_run_id'))
             entity.RowKey = padded_id
             entity.update(self.results)
 
