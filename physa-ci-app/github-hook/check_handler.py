@@ -75,19 +75,8 @@ class GithubClient(app_client.AppClient):
         }
         params = {
             'name': 'RosiePi',
-            'status': 'in_progress',
+            'status': 'queued',
             'started_at': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            # just turning off the counter on the job
-            #'status': 'completed',
-            #'conclusion': 'failure',
-            #'completed_at': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            #'output': {
-            #    'title': 'RosiePi',
-            #    'summary': 'Failed',
-            #    'text': ('RosiePi failed due to an internal error. '
-            #                'Please retry. If the problem persists, '
-            #                'contact an administrator.')
-            #}
         }
         response = requests.patch(api_url, headers=header, json=params)
         final_status = response.status_code
@@ -130,7 +119,7 @@ class GithubClient(app_client.AppClient):
             }
             queue_client = queue.QueueClient.from_connection_string(
                 queue_url,
-                'rosiepi-node-queue',
+                'rosiepi-check-queue',
                 **queue_config
             )
 
