@@ -2,6 +2,8 @@ import json
 import logging
 import requests
 
+from datetime import datetime
+
 import azure.functions as func
 
 # pylint: disable=import-error
@@ -56,13 +58,19 @@ def main(msg: func.QueueMessage) -> None:
     logging.info(f'Message is: {message}')
     
     check_info = json.loads(message)
-    
+
+    event_client = QueueGithubClient()
+    event_client.payload = check_info
+    github_output_summary = ''
+    github_check_message = {}
+
     push_msg = json.dumps({
         'commit_sha': check_info['check_run_head_sha'],
         'check_run_id': check_info['check_run_id'],
     })
 
     push_result, node_name = node_registrar.push_test_to_nodes(push_msg)
+    
     if push_result:
         check_info['node_name'] = node_name
         
@@ -77,22 +85,29 @@ def main(msg: func.QueueMessage) -> None:
                     f'Results Entity: {new_check.results_to_table_entity()}'
                 )
 
-        event_client = QueueGithubClient()
-        event_client.payload = check_info
-        message_summary = (
+        github_output_summary = (
             'RosiePi job has been queued on the following node: '
             f'{check_info["node_name"]}'
         )
-        github_message = {
+        github_check_message = {
             'status': 'queued',
             'output': {
                 'title': 'RosiePi',
-                'summary': message_summary,
+                'summary': github_output_summary,
             }
         }
-        event_client.update_check_run(github_message)
 
     else:
-        # raise an exception so the function fails and the
-        # queue message isn't dequeued
-        raise RuntimeError(f'Failed to queue job on a node. Queue: {message}')
+        logging.info('Job not accepted by a node, or push failed.')
+        github_output_summary = 'Job not accepted by any RosiePi nodes.'
+        github_check_message = {
+            'status': 'completed',
+            'conclusion': 'neutral',
+            'completed_at': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'output': {
+                'title': 'RosiePi',
+                'summary': github_output_summary
+            },
+        }
+
+    event_client.update_check_run(github_check_message)
