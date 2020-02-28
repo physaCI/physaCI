@@ -373,7 +373,7 @@ class SigAuth(requests.auth.AuthBase):
         self.node = node
 
     def __call__(self, r):
-        signature, included_headers = self._build_sig(r.method, r.url_path)
+        signature, included_headers = self._build_sig(r.method, r.path_url)
         r.headers['Authorization'] = signature
         r.headers.update(included_headers)
 
