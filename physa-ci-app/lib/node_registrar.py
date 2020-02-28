@@ -399,7 +399,7 @@ class SigAuth(requests.auth.AuthBase):
         sig_string = (f'(request-target) {request_target}\nhost: {header["Host"]}\n'
                     f'date: {header["Date"]}')
         sig_hashed = hmac.new(
-            self.node.node_sig_key,
+            self.node.node_sig_key.encode(),
             msg=sig_string.encode(),
             digestmod=sha256
         )
