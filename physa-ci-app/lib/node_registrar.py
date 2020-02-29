@@ -433,7 +433,7 @@ class SigAuth(requests.auth.AuthBase):
 
         signature = ''.join([
             'Signature '
-            f'keyID="{gethostname()}",',
+            f'keyID="{self.node.node_name}",',
             'algorithm="hmac-sha256",',
             f'headers="(request-target) {sig_header_keys}",',
             f'signature="{b64encode(sig_hashed.digest())}"'
