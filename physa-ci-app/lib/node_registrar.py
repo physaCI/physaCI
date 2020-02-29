@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 from socket import gethostname
+from sys import exc_info
 
 from azure.storage import queue
 
@@ -275,13 +276,15 @@ def push_test_to_nodes(message):
                 headers=header,
                 json=message,
             )
-        except requests.ConnectionError:
+        except Exception as err:
+            traceback = exc_info()[2]
             logging.warning(
                 'push_to_nodes connection error:\n'
                 f'\tNode name: {node.node_name}\n'
-                f'\tNode IP: {node.node_ip}'
+                f'\tNode IP: {node.node_ip}\n'
+                f'\tException: {err.with_traceback(traceback)}'
             )
-        
+
         if response:
             body = response.json()
             body['status_code'] = response.status_code
@@ -299,6 +302,16 @@ def push_test_to_nodes(message):
                         f'\tName: {node.node_name}'
                         f'\tIP: {node.node_ip}'
                     )
+            else:
+                logging.info(
+                    '_send_run_test_request failed. Response is: '
+                    f'status: {response.status_code} '
+                    f'response: {response.text}'
+                )
+        else:
+            logging.info(
+            f'_send_run_test_request failed. Response is: {response}'
+        )
 
         return response
 
