@@ -335,7 +335,14 @@ def push_test_to_nodes(message):
                 job_accepted = True
                 accepted_by = node.node_name
                 break
-        
+            else:
+                logging.info(
+                    'Pushing to node failed. Details: '
+                    f'name: {node.node_name}, '
+                    f'response status: {response.status_code}, '
+                    f'response message: {response.text}'
+                )
+
     # fallback to adding a test request to a busy node's queue
     # starting with the node with the fewest queued jobs
     if not job_accepted:
@@ -365,6 +372,13 @@ def push_test_to_nodes(message):
                     job_accepted = True
                     accepted_by = node.node_name
                     break
+                else:
+                    logging.info(
+                        'Pushing to busy node failed. Details: '
+                        f'name: {node.node_name}, '
+                        f'response status: {response.status_code}, '
+                        f'response message: {response.text}'
+                    )
 
     return job_accepted, accepted_by
 
