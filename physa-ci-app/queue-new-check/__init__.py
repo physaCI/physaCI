@@ -64,10 +64,10 @@ def main(msg: func.QueueMessage) -> None:
     github_output_summary = ''
     github_check_message = {}
 
-    push_msg = json.dumps({
+    push_msg = {
         'commit_sha': check_info['check_run_head_sha'],
         'check_run_id': check_info['check_run_id'],
-    })
+    }
 
     push_result, node_name = node_registrar.push_test_to_nodes(push_msg)
     
