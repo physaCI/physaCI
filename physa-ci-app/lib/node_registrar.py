@@ -256,9 +256,11 @@ def push_test_to_nodes(message):
     """ Push a test request to all nodes in the node registrar.
         (Reminder: entries in the registrar queue expire after 1 hour.)
     
-    :param: str message: The JSON message to send
+    :param: dict message: The JSON message to send.
 
-    :return: bool job_accepted: 
+    :return: bool job_accepted: If the job was successfully accepted
+    :return: str accepted_by: The name of the node that accepted the job.
+                              Returns ``None`` if not accepted.
     """
 
     def _send_run_test_request(node, message):
@@ -285,7 +287,7 @@ def push_test_to_nodes(message):
                 f'\tException: {err.with_traceback(traceback)}'
             )
 
-        if response:
+        if response is not None:
             body = response.json()
             body['status_code'] = response.status_code
             push_response[node.node_ip] = body
@@ -307,6 +309,8 @@ def push_test_to_nodes(message):
                     '_send_run_test_request failed. Response is: '
                     f'status: {response.status_code} '
                     f'response: {response.text}'
+                    f'request headers: {response.request.headers}'
+                    f'request body: {response.request.body}'
                 )
         else:
             logging.info(
@@ -423,7 +427,7 @@ class SigAuth(requests.auth.AuthBase):
         }
 
         sig_header_keys = ' '.join([hdr.lower() for hdr in header.keys()])
-        sig_string = (f'(request-target) {request_target}\nhost: {header["Host"]}\n'
+        sig_string = (f'(request-target): {request_target}\nhost: {header["Host"]}\n'
                     f'date: {header["Date"]}')
         sig_hashed = hmac.new(
             self.node.node_sig_key.encode(),
