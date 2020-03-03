@@ -321,7 +321,8 @@ def push_test_to_nodes(message):
 
     
     try:
-        json.loads(message)
+        json_str = json.dumps(message)
+        json.loads(json_str)
     except Exception as err:
         logging.info(
             'Failed to push message to nodes. JSON format incorrect.\n'
