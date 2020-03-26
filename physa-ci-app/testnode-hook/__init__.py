@@ -45,6 +45,29 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     elif req_func == 'testresult':
         result_json = req.get_json()
+
+        if req_action == 'update':
+            find_entity = node_db.get_result(
+                result_json['node_name'],
+                result_json['check_run_id'],
+            )
+            
+            logging.info(f'find_entity from table: {find_entity}')
+
+            if find_entity is not None:
+                for key, value in result_json.get('github_data', {}):
+                    new_key = f'check_run_{key}'
+                    find_entity.update({new_key: value})
+
+                find_entity.update(
+                    {'node_results': result_json.get('node_test_data', {}).get('board_tests')}
+                )
+
+                logging.info(f'find_entity after updates: {find_entity}')
+
+                result_json = find_entity
+
+
         check_result = result.Result(result_json)
         if not check_result.results:
             response_kwargs['status_code'] = 400
