@@ -4,6 +4,30 @@ import os
 from azure.cosmosdb.table.tableservice import TableService
 from azure.cosmosdb.table.models import Entity
 
+def get_result(partition_key, row_key, **kwargs):
+    """ Retirieves a result from the ``rosiepi`` storage table.
+
+    :param: partition_key: The ``PartitionKey`` of the entity
+    :param: row_key: The ``RowKey`` of the entity
+    :param: **kwargs: Any additional kwargs to pass onto the
+                      ``TableService.get_entity()`` function.
+
+    :return: The ``TableService.Entity``, or None if the Entity
+             isn't found.
+    """
+
+    response = None
+
+    table = TableService(connection_string=os.environ['APP_STORAGE_CONN_STR'])
+
+    try:
+        response = table.get_entity('rosiepi', partition_key, row_key, **kwargs)
+    except Exception as err:
+        logging.info(f'Failed to get result from rosiepi table. Error: {err}')
+
+    logging.info(f'TableService.Entity retrieved: {response}')
+    
+    return response
 
 def add_result(results_entity):
     """ Adds a new result to the ``rosiepi`` storage table.
