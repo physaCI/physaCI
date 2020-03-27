@@ -189,7 +189,7 @@ def add_node(node_params, response):
 
     return response
 
-def update_node(message, node, response):
+def update_node(message, node, response, *, pop_receipt=None):
     """ Update a node that is currently in the registrar.
 
     :param: str message: The id of the message in the registrar queue
@@ -202,7 +202,7 @@ def update_node(message, node, response):
 
     queue_msg = {
         'node_name': node.node_name,
-        'node_ip': node.node_id,
+        'node_ip': node.node_ip,
         'node_sig_key': node.node_sig_key,
         'listen_port': node.listen_port,
         'busy': node.busy,
@@ -215,6 +215,7 @@ def update_node(message, node, response):
     )
     try:
         sent_msg = queue_client.update_message(message,
+                                               pop_receipt,
                                                json.dumps(queue_msg))
         logging.info('Sent the following updated queue content: '
                      f'{sent_msg.content}')
@@ -263,11 +264,13 @@ def push_test_to_nodes(message):
                               Returns ``None`` if not accepted.
     """
 
-    def _send_run_test_request(node, message):
+    def _send_run_test_request(item, message):
         """ Private function to handle sending HTTP requests to nodes,
             and updating the registrar.
         """
         response = None
+
+        node = item.get('node')
         
         header = {'media': 'application/json'}
         
@@ -288,13 +291,16 @@ def push_test_to_nodes(message):
             )
 
         if response is not None:
-            body = response.json()
-            body['status_code'] = response.status_code
-            push_response[node.node_ip] = body
+            logging.info(f'_send_run_test request not None. response: {response}')
+            
             if response.ok:
-                node.busy = body['node_busy']
+                body = response.json()
+                node.busy = body['busy']
                 result = update_node(
-                    item['message'], node, {'status_code': 200, 'body': 'OK'}
+                    item['message'],
+                    node,
+                    {'status_code': 200, 'body': 'OK'},
+                    pop_receipt=item['message']['pop_receipt'],
                 )
                 if not result['status_code'] < 400:
                     logging.info(
@@ -333,7 +339,6 @@ def push_test_to_nodes(message):
 
     active_nodes = current_registrar()
 
-    push_response = {}
     busy_nodes = []
     job_accepted = False
     accepted_by = None
@@ -345,7 +350,7 @@ def push_test_to_nodes(message):
             busy_nodes.append(item)
             continue
         
-        response = _send_run_test_request(node, message)
+        response = _send_run_test_request(item, message)
         if not response:
             continue
         else:
@@ -382,7 +387,7 @@ def push_test_to_nodes(message):
         busy_nodes.sort(key=lambda count: count.get('node_job_count', 999))
         for item in busy_nodes:
             node = item['node']
-            response = _send_run_test_request(node, message)
+            response = _send_run_test_request(item, message)
             if not response:
                 continue
             else:
