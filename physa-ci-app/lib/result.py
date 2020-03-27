@@ -31,11 +31,19 @@ class Result():
         :return: azure.cosmodb.table.models.Entity or None
         """
         if self.results:
+            temp_results = self.results
             entity = Entity()
-            entity.PartitionKey = self.results.pop('node_name')
-            padded_id = "{:0=50}".format(self.results.pop('check_run_id'))
+            entity.PartitionKey = temp_results.pop('node_name')
+            
+            run_id = temp_results.pop('check_run_id')
+            padding = '0'*(50 - len(run_id))
+            padded_id = f'{padding}{run_id}'
             entity.RowKey = padded_id
-            entity.update(self.results)
+
+            for key, value in temp_results.items():
+                if isinstance(value, list):
+                    value = ','.join(value)
+                entity.update({key: value})
 
             return entity
 
