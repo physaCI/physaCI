@@ -9,7 +9,7 @@ REQUIRED_KEYS = {
     'check_run_head_sha',
     'check_run_url',
     'check_run_pull_requests',
-    'check_run_status',
+    #'check_run_status',
     #'node_results',
     #'node_results_raw',
     #'check_run_conclusion',
