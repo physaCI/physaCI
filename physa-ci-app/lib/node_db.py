@@ -47,7 +47,7 @@ def add_result(results_entity):
         try:
             response = table.insert_entity('rosiepi', results_entity)
         except Exception as err:
-            logging.info(f'Failed to add result to rosiepi table. Error: {err}')
+            logging.info(f'Failed to add result to rosiepi table. Error: {err}\nEntity: {results_entity}')
     else:
         logging.info(
             'Result not added to rosiepi table. Supplied result was an incorrect '
