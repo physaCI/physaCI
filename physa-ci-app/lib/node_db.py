@@ -20,6 +20,10 @@ def get_result(partition_key, row_key, **kwargs):
 
     table = TableService(connection_string=os.environ['APP_STORAGE_CONN_STR'])
 
+    # ensure RowKey is properly padded
+    padding = '0'*(50 - len(row_key))
+    row_key = f'{padding}{row_key}'
+
     try:
         response = table.get_entity('rosiepi', partition_key, row_key, **kwargs)
     except Exception as err:
