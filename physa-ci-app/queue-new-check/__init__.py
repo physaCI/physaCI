@@ -85,9 +85,11 @@ def main(msg: func.QueueMessage) -> None:
                     f'Results Entity: {new_check.results_to_table_entity()}'
                 )
 
+        logging.info(f'check_info after adding to table: {check_info}')
+
         github_output_summary = (
             'RosiePi job has been queued on the following node: '
-            f'{check_info["node_name"]}'
+            f'{check_info.get("node_name")}'
         )
         github_check_message = {
             'status': 'queued',
