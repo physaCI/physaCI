@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 from azure.cosmosdb.table.models import Entity
@@ -31,7 +32,7 @@ class Result():
         :return: azure.cosmodb.table.models.Entity or None
         """
         if self.results:
-            temp_results = self.results
+            temp_results = copy.deepcopy(self.results)
             entity = Entity()
             entity.PartitionKey = temp_results.pop('node_name')
             
