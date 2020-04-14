@@ -50,12 +50,16 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             find_entity = node_db.get_result(
                 result_json['node_name'],
                 result_json['check_run_id'],
+                **{
+                    'accept': 'application/json;odata=nometadata',
+                    'timeout': 120
+                }
             )
             
             logging.info(f'find_entity from table: {find_entity}')
 
             if find_entity is not None:
-                for key, value in result_json.get('github_data', {}):
+                for key, value in result_json.get('github_data', {}).items():
                     new_key = f'check_run_{key}'
                     find_entity.update({new_key: value})
 
