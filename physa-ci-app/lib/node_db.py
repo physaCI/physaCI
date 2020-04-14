@@ -1,8 +1,19 @@
+import json
 import logging
 import os
 
 from azure.cosmosdb.table.tableservice import TableService
 from azure.cosmosdb.table.models import Entity
+
+IGNORED_ITEMS = [
+    # Timestamps are returned as datetime objects and are not JSONable.
+    # Further, they are ignored when sent to a Table, so we can just
+    # drop them.
+    'Timestamp',
+    # etags are not used for cache/compare, so don't pollute the
+    # tables with them.
+    'etag',
+]
 
 def get_result(partition_key, row_key, **kwargs):
     """ Retirieves a result from the ``rosiepi`` storage table.
@@ -28,8 +39,24 @@ def get_result(partition_key, row_key, **kwargs):
         response = table.get_entity('rosiepi', partition_key, row_key, **kwargs)
     except Exception as err:
         logging.info(f'Failed to get result from rosiepi table. Error: {err}')
+        raise
 
     logging.info(f'TableService.Entity retrieved: {response}')
+
+    # Flatten the entity
+    json_data_copy = response.get('json_data')
+    if json_data_copy:
+        del response['json_data']
+        try:
+            flat_data = json.loads(json_data_copy)
+            response.update(flat_data)
+        except Exception as err:
+            logging.info('Failed to flatten TableService.Entity.')
+            raise
+
+    for item in IGNORED_ITEMS:
+        if item in response:
+            del response[item]
     
     return response
 
