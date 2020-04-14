@@ -1,23 +1,9 @@
 import copy
 import json
 import logging
+import re
 from azure.cosmosdb.table.models import Entity
 
-REQUIRED_KEYS = {
-    'node_name',
-    'check_run_suite_id',
-    'check_run_id',
-    'check_run_head_sha',
-    'check_run_url',
-    'check_run_pull_requests',
-    #'check_run_status',
-    #'node_results',
-    #'node_results_raw',
-    #'check_run_conclusion',
-    #'check_run_started_at',
-    #'check_run_output',
-    #'check_run_details_url',
-}
 
 class Result():
     """ Class containing a test result, supplied by a node.
@@ -34,17 +20,26 @@ class Result():
         if self.results:
             temp_results = copy.deepcopy(self.results)
             entity = Entity()
-            entity.PartitionKey = temp_results.pop('node_name')
+            entity.PartitionKey = temp_results.get('node_name')
             
-            run_id = temp_results.pop('check_run_id')
+            run_id = temp_results.get('check_run_id')
             padding = '0'*(50 - len(run_id))
             padded_id = f'{padding}{run_id}'
             entity.RowKey = padded_id
+ 
+            for item in ('PartitionKey', 'RowKey'):
+                if item in temp_results:
+                    del temp_results[item]
 
-            for key, value in temp_results.items():
-                if isinstance(value, list):
-                    value = ','.join(value)
-                entity.update({key: value})
+            try:
+                json_data = json.dumps(temp_results)
+                entity.update({'json_data': json_data})
+            except json.JSONDecodeError:
+                logging.warning(
+                    'Failed to JSONify results_to_table_entity value. '
+                    f'Original value: {temp_results}'
+                )
+                raise
 
             return entity
 
@@ -100,11 +95,5 @@ def verify_results(results):
                 'Failed to verify results. Incorrect datatype '
                 f'({type(results)}). Supplied results: {results}'
             )
-
-    if verified:
-        diff = REQUIRED_KEYS.difference(verified.keys())
-        if diff:
-            logging.info(f'Failed to verify results. Missing data: {diff}')
-            verified = None
 
     return verified
