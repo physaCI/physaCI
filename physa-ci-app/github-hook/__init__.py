@@ -3,7 +3,8 @@ import os
 
 import azure.functions as func
 
-from . import check_handler
+# pylint: disable=import-error
+from __app__.lib import app_client as check_handler
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
