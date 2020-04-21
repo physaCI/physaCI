@@ -43,7 +43,7 @@ class Result():
 
             return entity
 
-    def results_to_github(self, key_prefix='check_run'):
+    def results_to_github(self, key_prefix='check_run_'):
         """ Format the results into a GitHub Check JSON message.
 
         :return: JSON string
