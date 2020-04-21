@@ -9,6 +9,18 @@ from datetime import datetime, timedelta
 
 from azure.storage import queue
 
+_CHECK_RUN_UPDATE_PARAMS = [
+    'name',
+    'details_url',
+    'external_id',
+    'started_at',
+    'status',
+    'conclusion',
+    'completed_at',
+    'output',
+    'actions',
+]
+
 def generate_jwt_token():
         """ Authenticate with GitHub as an App so that we can
             process API requests
@@ -238,5 +250,39 @@ class GithubClient(AppClient):
                 requests.patch(api_url, headers=header, json=params)
 
         logging.info(f'Check run update successful: {response.ok}')
+        
+        return final_status
+
+    def update_check_run(self, message):
+        """ Updates a previously created check run
+        """
+        update_payload = {'installation': {'id': self.payload['installation_id']}}
+
+        self.installation_token = self.create_installation_app_token(update_payload)
+        if not self.installation_token:
+            logging.info(
+                'Check run not updated. No installation token available.'
+            )
+            return 401
+
+        
+        api_url = self.payload['api_url']
+
+        header = {
+            'Authorization': f'token {self.installation_token}',
+            'Accept': 'application/vnd.github.antiope-preview+json',
+        }
+        
+        response = requests.patch(api_url, headers=header, json=message)
+        final_status = response.status_code
+        if not response.ok:
+            logging.info(
+                'Failed to update check run.\n'
+                f'Response: {response.text}\n'
+                f'URL: {response.url}\n'
+                f'Headers: {response.headers}'
+            )
+        logging.info(f'Check run update status: {final_status}')
+        logging.info(f'Check run update return message: {response.text}')
         
         return final_status
