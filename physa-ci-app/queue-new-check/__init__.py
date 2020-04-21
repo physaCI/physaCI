@@ -9,47 +9,6 @@ import azure.functions as func
 # pylint: disable=import-error
 from __app__.lib import app_client, result, node_registrar, node_db
 
-class QueueGithubClient(app_client.AppClient):
-    """ Client object to wrap and contain necessary functions and variables
-        to interact with the App.
-    """
-    def __init__(self):
-        super().__init__()
-
-    def update_check_run(self, message):
-        """ Updates a previously created check run
-        """
-        update_payload = {'installation': {'id': self.payload['installation_id']}}
-
-        self.installation_token = self.create_installation_app_token(update_payload)
-        if not self.installation_token:
-            logging.info(
-                'Check run not updated. No installation token available.'
-            )
-            return 401
-
-        
-        api_url = self.payload['api_url']
-
-        header = {
-            'Authorization': f'token {self.installation_token}',
-            'Accept': 'application/vnd.github.antiope-preview+json',
-        }
-        
-        response = requests.patch(api_url, headers=header, json=message)
-        final_status = response.status_code
-        if not response.ok:
-            logging.info(
-                'Failed to update check run.\n'
-                f'Response: {response.text}\n'
-                f'URL: {response.url}\n'
-                f'Headers: {response.headers}'
-            )
-        logging.info(f'Check run update status: {final_status}')
-        logging.info(f'Check run update return message: {response.text}')
-        return final_status
-
-
 def main(msg: func.QueueMessage) -> None:
     logging.info('Python queue trigger function processed a queue item: %s',
                  msg.get_body().decode('utf-8'))
@@ -59,7 +18,7 @@ def main(msg: func.QueueMessage) -> None:
     
     check_info = json.loads(message)
 
-    event_client = QueueGithubClient()
+    event_client = app_client.GithubClient()
     event_client.payload = check_info
     github_output_summary = ''
     github_check_message = {}
@@ -104,7 +63,7 @@ def main(msg: func.QueueMessage) -> None:
         github_output_summary = 'Job not accepted by any RosiePi nodes.'
         github_check_message = {
             'status': 'completed',
-            'conclusion': 'neutral',
+            'conclusion': 'cancelled',
             'completed_at': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
             'output': {
                 'title': 'RosiePi',
