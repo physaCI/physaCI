@@ -6,7 +6,7 @@ import re
 import azure.functions as func
 
 # pylint: disable=import-error
-from __app__.lib import result, node_github, node_registrar, node_db
+from __app__.lib import app_client, result, node_github, node_registrar, node_db
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
@@ -95,5 +95,21 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     'Interal error. Failed to update test results in physaCI.'
                 )
 
+            check_result_github = json.loads(check_result.results_to_github())
+            github_check_message = {}
+            for param in app_client._CHECK_RUN_UPDATE_PARAMS:
+                if param in check_result_github:
+                    github_check_message.update(
+                        {param: check_result_github[param]}
+                    )
+
+            logging.info(
+                'Updating GitHub check run with the following: '
+                f'{github_check_message}'
+            )
+
+            event_client = app_client.GithubClient()
+            event_client.payload = check_result.results
+            event_client.update_check_run(github_check_message)
 
     return func.HttpResponse(**response_kwargs)
