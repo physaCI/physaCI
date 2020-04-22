@@ -32,6 +32,9 @@ def main(msg: func.QueueMessage) -> None:
     
     if push_result:
         check_info['node_name'] = node_name
+        check_info['check_run_external_id'] = (
+            f'{node_name}:{check_info["check_run_head_sha"]}'
+        )
         
         new_check = result.Result(check_info)
         if new_check.results:
