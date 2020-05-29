@@ -15,7 +15,7 @@ IGNORED_ITEMS = [
     'etag',
 ]
 
-def get_result(partition_key, row_key, **kwargs):
+def get_result(partition_key, row_key, tbl_svc_retry=None, **kwargs):
     """ Retirieves a result from the ``rosiepi`` storage table.
 
     :param: partition_key: The ``PartitionKey`` of the entity
@@ -30,6 +30,8 @@ def get_result(partition_key, row_key, **kwargs):
     response = None
 
     table = TableService(connection_string=os.environ['APP_STORAGE_CONN_STR'])
+    if tbl_svc_retry is not None:
+        table.retry = tbl_svc_retry
 
     # ensure RowKey is properly padded
     padding = '0'*(50 - len(row_key))
