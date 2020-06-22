@@ -37,9 +37,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         
         elif event == 'check_suite':
             logging.info('Processing check_suite...')
-            if action in ('requested', 'rerequested'):
-                # create check_run
-                event_status = event_client.create_check_run()
+            if (action in ('requested', 'rerequested') and
+                payload.get('check_suite', {}).get('pull_requests')):
+                    # create check_run
+                    event_status = event_client.create_check_run()
         
         elif event == 'check_run':
             logging.info('Processing check_run...')
