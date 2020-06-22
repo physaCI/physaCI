@@ -3,7 +3,8 @@ import os
 
 import azure.functions as func
 
-from . import check_handler
+# pylint: disable=import-error
+from __app__.lib import app_client
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
@@ -15,7 +16,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     event_status = 200
 
     if 'x-github-event' in req.headers:
-        event_client = check_handler.GithubClient()
+        event_client = app_client.GithubClient()
         event = req.headers['x-github-event']
         payload = ""
         action = None
@@ -36,9 +37,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         
         elif event == 'check_suite':
             logging.info('Processing check_suite...')
-            if action in ('requested', 'rerequested'):
-                # create check_run
-                event_status = event_client.create_check_run()
+            if (action in ('requested', 'rerequested') and
+                payload.get('check_suite', {}).get('pull_requests')):
+                    # create check_run
+                    event_status = event_client.create_check_run()
         
         elif event == 'check_run':
             logging.info('Processing check_run...')
